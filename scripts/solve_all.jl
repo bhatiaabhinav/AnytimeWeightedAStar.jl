@@ -1,14 +1,14 @@
-include("./../search_problems/npuzzle.jl")
-include("./../search_problems/tsp.jl")
-include("./../search_problems/cnp.jl")
+using AnytimeWeightedAStar
+using AnytimeWeightedAStar.SearchProblem: seed!, reset!, heuristic, start_state
+using AnytimeWeightedAStar.ExampleProblems
 
-function solve_all(search_problem::AbstractSearchProblem, num_instances, rwa_weights, awa_weights, nodes_budget; walltime_limit=Inf)
+function solve_all(search_problem, num_instances, rwa_weights, awa_weights, nodes_budget; walltime_limit=Inf)
     solution_qualities_per_approach = Dict{Any,Vector{Float64}}()
     for instance_id in 1:num_instances
-        seed!(search_problem, instance_id)
+        seed!(search_problem, instance_id) 
         reset!(search_problem)
         h0 = heuristic(search_problem, start_state(search_problem))
-        Threads.@threads for w in [rwa_weights, awa_weights...]
+        for w in [rwa_weights, awa_weights...]
             if w == rwa_weights
                 awa = rwastar_search(search_problem, w, walltime_limit, nodes_budget, instance_id)
             else

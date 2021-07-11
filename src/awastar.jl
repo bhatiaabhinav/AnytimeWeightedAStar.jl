@@ -1,5 +1,6 @@
-export AbstractWeightAdjustmentPolicy, possible_weights, ConstantWeightPolicy, AWAStar, simulated_time, wall_time, expansion_rate, quality, awastar_search, awastar_search_with_dynamic_weights
-
+using .SearchProblem: AbstractSearchProblem, start_state, key, heuristic, cost, goal_test
+using .GraphSearch
+using .GraphSearch: AbstractTreeSearchAlgorithm, graph_search!, get_solution
 using Random
 using Statistics
 
@@ -66,7 +67,7 @@ expansion_rate(awastar::AWAStar) = awastar.nodes_expended / wall_time(awastar)
 
 quality(cost, optimal_cost) = optimal_cost / cost
 
-function init!(awastar::AWAStar, sp::AbstractSearchProblem)
+function GraphSearch.init!(awastar::AWAStar, sp::AbstractSearchProblem)
     empty!(awastar.open_lists)
     empty!(awastar.closed_set)
     empty!(awastar.path_costs)
@@ -95,7 +96,7 @@ function init!(awastar::AWAStar, sp::AbstractSearchProblem)
     awastar.path_costs[start_node_key] = start_node_g
 end
 
-function stop_condition(awastar::AWAStar, sp::AbstractSearchProblem)
+function GraphSearch.stop_condition(awastar::AWAStar, sp::AbstractSearchProblem)
     timeup = wall_time(awastar) >= awastar.walltime_limit
     budgetup = awastar.nodes_expended >= awastar.nodes_budget
     converged = false
@@ -114,7 +115,7 @@ function stop_condition(awastar::AWAStar, sp::AbstractSearchProblem)
     return stop
 end
 
-function node_expansion_policy(awastar::AWAStar, sp::AbstractSearchProblem)
+function GraphSearch.node_expansion_policy(awastar::AWAStar, sp::AbstractSearchProblem)
     node_f = Inf
     node = nothing
     node_key = nothing
@@ -129,11 +130,11 @@ function node_expansion_policy(awastar::AWAStar, sp::AbstractSearchProblem)
     return node
 end
 
-function before_node_expansion!(awastar::AWAStar, node::TreeSearchNode, sp::AbstractSearchProblem)
+function GraphSearch.before_node_expansion!(awastar::AWAStar, node::TreeSearchNode, sp::AbstractSearchProblem)
     push!(awastar.closed_set, key(sp, node.state))
 end
 
-function on_node_generation!(awastar::AWAStar, child_node::TreeSearchNode, sp::AbstractSearchProblem)
+function GraphSearch.on_node_generation!(awastar::AWAStar, child_node::TreeSearchNode, sp::AbstractSearchProblem)
     child_node_g, child_node_h = child_node.path_cost, heuristic(sp, child_node.state)
     child_node_f = child_node_g + child_node_h
     @debug "Child node" child_node.state child_node_g child_node_h child_node_f awastar.solution_cost
@@ -179,11 +180,11 @@ function on_node_generation!(awastar::AWAStar, child_node::TreeSearchNode, sp::A
     end
 end
 
-function on_node_expansion_finish!(awastar::AWAStar, node::TreeSearchNode, sp::AbstractSearchProblem)
+function GraphSearch.on_node_expansion_finish!(awastar::AWAStar, node::TreeSearchNode, sp::AbstractSearchProblem)
     awastar.nodes_expended += 1
 end
 
-function on_stop!(awastar::AWAStar, sp::AbstractSearchProblem)
+function GraphSearch.on_stop!(awastar::AWAStar, sp::AbstractSearchProblem)
     awastar.stop_time = time()
 end
 

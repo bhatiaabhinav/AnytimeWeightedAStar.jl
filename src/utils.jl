@@ -1,5 +1,3 @@
-export update_mean, update_mean_std, update_mean_std_corr
-
 function update_mean(μ::Real, n::Integer, x::Real; remove::Bool=false)
     mask = 2 * Int(!remove) - 1
     new_n = n + mask

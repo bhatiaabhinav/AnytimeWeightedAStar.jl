@@ -1,6 +1,6 @@
 # AnytimeWeightedAStar.jl
 
-Julia Implementation of [Anytime Weighted A* (AWA*)](https://arxiv.org/abs/1110.2737) algorithm and Randomized Weighted A* (RWA*) algorithm.
+Julia Implementation of [Anytime Weighted A* (AWA*)](https://arxiv.org/abs/1110.2737) algorithm and Randomized Weighted A* (RWA*) algorithm (Published at SoCS 2021).
 
 RWA* is a variant of AWA* that randomly adjusts the weight at runtime. It typically outperforms AWA* with any static weight.
 
@@ -16,12 +16,15 @@ Run Julia REPL as `JULIA_PROJECT=. julia`. Then press `]` to enter package manag
 ## Running AWA*/RWA*
 In julia REPL:
 ```julia
-include("./search_problems/npuzzle.jl");
-search_problem = SlidingPuzzle(4:4, 35:45);  # specifies a 4x4 sliding puzzle with the starting state (manhattan) heuristic as a random value 35 and 45.
-seed!(search_problem, 1);
-reset!(search_problem); # Creates the search problem
+using AnytimeWeightedAStar
+using AnytimeWeightedAStar.SearchProblem: seed!, reset!
+using AnytimeWeightedAStar.ExampleProblems  # Sliding Puzzle, Inverse Sliding Puzzle, Traveling Salesman Problem, City Navigation Problem. See src/example_problems directory for more details.
 
-awa = awastar_search(search_problem, 2, 10, 10000);  # runs AWA* on the puzzle with a weight=2, a timelimit of 10 seconds and a node-expansions limit of 10000.
+search_problem = SlidingPuzzle(4:4, 35:45);  # specifies a 4x4 sliding puzzle (also knowing as 15-Puzzle) with starting state (manhattan) heuristic randomly between 35 and 45.
+seed!(search_problem, 1);
+reset!(search_problem); # Creates a problem instance.
+
+awa = awastar_search(search_problem, 2, 10, 10000);  # runs AWA* on the puzzle with a weight=2, a timelimit of 10 seconds and node-expansions limit of 10000.
 println(awa.solution, " ", awa.solution_cost)
 
 rwa = rwastar_search(search_problem, [1,2,3,4,5], 10, 10000, 42); # RWA* with weight set {1,2,3,4,5}, timelimit 10 seconds, node-expansions limit 10000, and RWA*'s random seed = 42.

@@ -1,3 +1,4 @@
+using ..SearchProblem: AbstractSearchProblem
 
 abstract type AbstractTreeSearchAlgorithm end
 
@@ -23,3 +24,4 @@ function graph_search!(search_algo::AbstractTreeSearchAlgorithm, search_prob::Ab
     on_stop!(search_algo, search_prob)
     return search_algo
 end
+

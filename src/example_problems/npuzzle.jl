@@ -1,4 +1,5 @@
-using AnytimeWeightedAStar
+using ..SearchProblem
+using ..SearchProblem: reset!
 using Random
 
 puzzle_actions = Dict{String,Tuple{Int,Int}}(
@@ -7,7 +8,7 @@ puzzle_actions = Dict{String,Tuple{Int,Int}}(
         "LEFT" => (0, -1),
         "RIGHT" => (0, 1))
 
-mutable struct SlidingPuzzle <: AbstractSearchProblem
+mutable struct SlidingPuzzle <: SearchProblem.AbstractSearchProblem
     side_range::AbstractArray{Int}
     manhat_range::AbstractArray{Int}
     inverse::Bool
@@ -28,17 +29,15 @@ mutable struct SlidingPuzzle <: AbstractSearchProblem
 end
 
 
-
-
-# function max_possible_manhat(side::Int)
-#     s = 0
-#     k = 1
-#     while n - k >= 0
-#         s += n - k
-#         k += 2
-#     end
-#     return 4n * s
-# end
+function max_possible_manhat(side::Int)
+    s = 0
+    k = 1
+    while n - k >= 0
+        s += n - k
+        k += 2
+    end
+    return 4n * s
+end
 
 function initial_puzzle!(puzzle::Array{Int8,2})
     side = size(puzzle)[1]
@@ -100,32 +99,22 @@ function shuffle_puzzle_hillclimb!(sp::SlidingPuzzle, target_manhat::Int, ϵ=0.1
     manhat = haskey(cache, sp.puzzle) ? cache[sp.puzzle] : compute_manhat(sp.puzzle, sp.goal_puzzle)
     cache[sp.puzzle] = manhat
     while manhat < target_manhat
-        # println("puzzle=")
-        # show(sp.puzzle)
-        # println("manhat=$manhat")
         legal_actions = puzzle_legal_actions(sp.side, sp.blank_loc)
         action = rand(sp.rng, legal_actions)
-        # println(action)
         new_puzzle, new_blank_loc = compute_next_puzzle(sp.puzzle, sp.blank_loc, action)
-        # println("new_puzzle=")
-        # show(new_puzzle)
 
         new_manhat = haskey(cache, new_puzzle) ? cache[new_puzzle] : compute_manhat(new_puzzle, sp.goal_puzzle)
-        # println("new_manhat=$new_manhat")
         cache[new_puzzle] = new_manhat
         if new_manhat > manhat || rand(sp.rng) < ϵ
-            # println("accepted")
             sp.puzzle = new_puzzle
             sp.blank_loc = new_blank_loc
             manhat = new_manhat
-        else
-            # println("rejected")
         end
     end
     return manhat
 end
 
-function AnytimeWeightedAStar.reset!(sp::SlidingPuzzle)
+function SearchProblem.reset!(sp::SlidingPuzzle)
     empty!(sp.heuritic_cache)
     sp.side = rand(sp.rng, sp.side_range)
     sp.goal_puzzle = initial_puzzle(sp.side)
@@ -136,10 +125,10 @@ function AnytimeWeightedAStar.reset!(sp::SlidingPuzzle)
         end
 
 
-AnytimeWeightedAStar.start_state(sp::SlidingPuzzle) = sp.puzzle
+SearchProblem.start_state(sp::SlidingPuzzle) = sp.puzzle
 
 
-function AnytimeWeightedAStar.cost(sp::SlidingPuzzle, state::Array{Int8,2}, action::String, next_state::Array{Int8,2})
+function SearchProblem.cost(sp::SlidingPuzzle, state::Array{Int8,2}, action::String, next_state::Array{Int8,2})
     if sp.inverse
 moved_tile = sum(abs.(state .- next_state)) / 2
         return 1 / moved_tile
@@ -149,9 +138,9 @@ moved_tile = sum(abs.(state .- next_state)) / 2
 end
 
 
-AnytimeWeightedAStar.goal_test(sp::SlidingPuzzle, state::Array{Int8,2}) = state == sp.goal_puzzle
+SearchProblem.goal_test(sp::SlidingPuzzle, state::Array{Int8,2}) = state == sp.goal_puzzle
 
-function AnytimeWeightedAStar.heuristic(sp::SlidingPuzzle, state::Array{Int8,2})
+function SearchProblem.heuristic(sp::SlidingPuzzle, state::Array{Int8,2})
     if haskey(sp.heuritic_cache, state)
         return sp.heuritic_cache[state]
     else
@@ -161,7 +150,7 @@ function AnytimeWeightedAStar.heuristic(sp::SlidingPuzzle, state::Array{Int8,2})
     end
 end
 
-function AnytimeWeightedAStar.successors(sp::SlidingPuzzle, state::Array{Int8,2})
+function SearchProblem.successors(sp::SlidingPuzzle, state::Array{Int8,2})
     side = size(state)[1]
     blank_loc = Tuple(indexin(0, state)[1])
     actions = puzzle_legal_actions(side, blank_loc)

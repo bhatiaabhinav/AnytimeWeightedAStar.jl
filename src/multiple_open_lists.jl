@@ -1,3 +1,4 @@
+using .GraphSearch: TreeSearchNode
 import Base: push!, length, keys, pop!, peek, get, delete!, haskey, values, empty!
 
 mutable struct MultipleOpenLists

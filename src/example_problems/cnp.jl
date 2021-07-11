@@ -1,5 +1,5 @@
+using ..SearchProblem
 using Random
-using AnytimeWeightedAStar
 
 puzzle_actions = Dict{String,Tuple{Int,Int}}(
         "UP" => (-1, 0),
@@ -8,7 +8,7 @@ puzzle_actions = Dict{String,Tuple{Int,Int}}(
         "RIGHT" => (0, 1))
 
 
-mutable struct City <: AbstractSearchProblem
+mutable struct City
     position::Tuple{Float32,Float32}
     num_places::Int32
     np::Int32
@@ -57,7 +57,7 @@ function reset_city!(city::City, position::Tuple{Real,Real}, rng::MersenneTwiste
 end
 
 
-mutable struct CityNavigation <: AbstractSearchProblem
+mutable struct CityNavigation <: SearchProblem.AbstractSearchProblem
     num_cities::Int32
     num_places::Int32
     nc::Int32
@@ -82,7 +82,7 @@ mutable struct CityNavigation <: AbstractSearchProblem
 end
 
 
-function AnytimeWeightedAStar.reset!(cnp::CityNavigation)
+function SearchProblem.reset!(cnp::CityNavigation)
     connected(cityid1, cityid2) = cnp.costs[cityid1, cityid2] < Inf
     function connect!(cityid1, cityid2)
         if !connected(cityid1, cityid2)
@@ -116,27 +116,26 @@ function AnytimeWeightedAStar.reset!(cnp::CityNavigation)
 end
 
 
-AnytimeWeightedAStar.start_state(cnp::CityNavigation) = cnp.start_loc
+SearchProblem.start_state(cnp::CityNavigation) = cnp.start_loc
 
-function AnytimeWeightedAStar.cost(cnp::CityNavigation, state::Tuple{Integer,Integer}, action::String, next_state::Tuple{Integer,Integer})
+function SearchProblem.cost(cnp::CityNavigation, state::Tuple{Integer,Integer}, action::String, next_state::Tuple{Integer,Integer})
 cityid1, placeid1 = state
     cityid2, placeid2 = next_state
     return cityid1 == cityid2 ? cnp.cities[cityid1].costs[placeid1, placeid2] : cnp.costs[cityid1, cityid2]
 end
 
-function AnytimeWeightedAStar.goal_test(cnp::CityNavigation, state)
+function SearchProblem.goal_test(cnp::CityNavigation, state)
     return state == cnp.end_loc
 end
 
-function AnytimeWeightedAStar.heuristic(cnp::CityNavigation, state)
+function SearchProblem.heuristic(cnp::CityNavigation, state)
     cityid, placeid = state
     dest_cityid, dest_placeid = cnp.end_loc
-    # println("heuristic calc: state=$state, dest::$(cnp.end_loc)")
     return euclid_distance(cnp.cities[cityid].places_positions[placeid],
                         cnp.cities[dest_cityid].places_positions[dest_placeid])
 end
 
-function AnytimeWeightedAStar.successors(cnp::CityNavigation, state)
+function SearchProblem.successors(cnp::CityNavigation, state)
     cur_city_id, cur_place_id = state
     cur_city = cnp.cities[cur_city_id]
     succ = Set{Tuple{Tuple{Int32,Int32},String}}()

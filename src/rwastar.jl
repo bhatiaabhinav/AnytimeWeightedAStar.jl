@@ -1,8 +1,5 @@
 using Random
 
-export RandomWeightAdjustmentPolicy, rwastar_search
-
-
 struct RandomWeightAdjustmentPolicy <: AbstractWeightAdjustmentPolicy
     weights::Vector{Float64}
     rng::MersenneTwister
@@ -15,7 +12,6 @@ seed!(rwap::RandomWeightAdjustmentPolicy, seed::Integer) = Random.seed!(rwap.rng
 possible_weights(rwap::RandomWeightAdjustmentPolicy) = rwap.weights
 
 (rwap::RandomWeightAdjustmentPolicy)() = rand(rwap.rng, rwap.weights)
-
 
 
 function rwastar_search(search_prob::AbstractSearchProblem, weights::AbstractArray{T}, walltime_limit::Real, nodes_budget::Integer, rwa_seed::Integer) where T <: Real
