@@ -14,7 +14,6 @@ Set julia project to current folder by setting environment variable `export JULI
 Run Julia REPL (i.e type `julia` in command line). Then press `]` to enter package management mode and type `instantiate`. This will install all the dependencies.
 
 ## Examples
-In julia REPL:
 ```julia
 using AnytimeWeightedAStar
 using AnytimeWeightedAStar.SearchProblem: seed!, reset!
