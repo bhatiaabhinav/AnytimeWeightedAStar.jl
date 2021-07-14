@@ -10,10 +10,10 @@ RWA* is a variant of AWA* that randomly adjusts the weight at runtime. It typica
 git clone https://github.com/bhatiaabhinav/AnytimeWeightedAStar.jl
 cd AnytimeWeightedAStar.jl/
 ```
+Set julia project to current folder by setting environment variable `export JULIA_PROJECT=.`.
+Run Julia REPL (i.e type `julia` in command line). Then press `]` to enter package management mode and type `instantiate`. This will install all the dependencies.
 
-Run Julia REPL as `JULIA_PROJECT=. julia`. Then press `]` to enter package management mode and type `instantiate` and press enter. This will install all the dependencies.
-
-## Running AWA*/RWA*
+## Examples
 In julia REPL:
 ```julia
 using AnytimeWeightedAStar
@@ -31,5 +31,5 @@ rwa = rwastar_search(search_problem, [1,2,3,4,5], 10, 10000, 42); # RWA* with we
 println(rwa.solution, " ", rwa.solution_cost)
 ```
 
-See scripts/solve_all.jl for more examples.
+See `scripts/solve_all.jl` for more examples.
 
