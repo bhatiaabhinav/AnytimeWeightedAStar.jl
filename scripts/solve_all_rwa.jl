@@ -34,8 +34,9 @@ function get_avg_solution_quality_per_approach(solution_qualities_per_approach)
     return avg_per_approach
 end
 
-rwa_weights = [1, 1.5, 2, 3, 4, 5]  # Run rwa* with these weights
-awa_weights = [1, 1.5, 2, 3, 4, 5]  # Run awa* with each of these weights
+rwa_weights = [1,1.5,2,3,4,5]  # Run rwa* with these weights
+# awa_weights = [1,1.5,2,3,4,5]  # Run awa* with each of these weights
+awa_weights = []  # Run awa* with each of these weights
 nodes_budget = 6000
 num_instances = 100
 
