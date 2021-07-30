@@ -27,6 +27,7 @@ mutable struct AWAStar{WAP <: AbstractWeightAdjustmentPolicy} <: AbstractTreeSea
     start_time::Float64
     stop_time::Union{Nothing,Float64}
     nodes_expended::Int
+    interrupted::Bool
 
     nodes_expended_to_fist_solution::Union{Int,Nothing}
     num_solutions::Int
@@ -67,11 +68,16 @@ expansion_rate(awastar::AWAStar) = awastar.nodes_expended / wall_time(awastar)
 
 quality(cost, optimal_cost) = optimal_cost / cost
 
+function interrupt!(awastar::AWAStar)
+    awastar.interrupted = true
+end
+
 function GraphSearch.init!(awastar::AWAStar, sp::AbstractSearchProblem)
     empty!(awastar.open_lists)
     empty!(awastar.closed_set)
     empty!(awastar.path_costs)
     awastar.nodes_expended = 0
+    awastar.interrupted = false
     awastar.nodes_expended_to_fist_solution = nothing
     awastar.num_solutions = 0
     empty!(awastar.all_solutions_costs)
@@ -108,9 +114,9 @@ function GraphSearch.stop_condition(awastar::AWAStar, sp::AbstractSearchProblem)
     else
         open_list_empty = true
     end
-    stop = open_list_empty || converged || timeup || budgetup
+    stop = open_list_empty || converged || timeup || budgetup || awastar.interrupted
     if stop
-        @debug "Stopping" open_list_empty converged timeup budgetup
+        @debug "Stopping" open_list_empty converged timeup budgetup awastar.interrupted
     end
     return stop
 end
