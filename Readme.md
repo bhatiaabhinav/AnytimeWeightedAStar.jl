@@ -16,11 +16,12 @@ Run Julia REPL (i.e type `julia` in command line). Then press `]` to enter packa
 ## Examples
 ```julia
 using AnytimeWeightedAStar
-using AnytimeWeightedAStar.SearchProblem: seed!, reset!
+using AnytimeWeightedAStar.SearchProblem
 using AnytimeWeightedAStar.ExampleProblems  # Sliding Puzzle, Inverse Sliding Puzzle, Traveling Salesman Problem, City Navigation Problem. See src/example_problems directory for more details.
+using Random
 
 search_problem = SlidingPuzzle(4:4, 35:45);  # specifies a 4x4 sliding puzzle (also knowing as 15-Puzzle) with starting state (manhattan) heuristic randomly between 35 and 45.
-seed!(search_problem, 1);
+Random.seed!(search_problem, 1);
 reset!(search_problem); # Creates a problem instance.
 
 awa = awastar_search(search_problem, 2, 10, 10000);  # runs AWA* on the puzzle with a weight=2, a timelimit of 10 seconds and node-expansions limit of 10000.

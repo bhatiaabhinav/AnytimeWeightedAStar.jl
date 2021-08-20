@@ -1,11 +1,12 @@
 using AnytimeWeightedAStar
-using AnytimeWeightedAStar.SearchProblem: seed!, reset!, heuristic, start_state
+using AnytimeWeightedAStar.SearchProblem
 using AnytimeWeightedAStar.ExampleProblems
+using Random
 
 function solve_all(search_problem, num_instances, rwa_weights, awa_weights, nodes_budget; walltime_limit=Inf)
     solution_qualities_per_approach = Dict{Any,Vector{Float64}}()
     for instance_id in 1:num_instances
-        seed!(search_problem, instance_id) 
+        Random.seed!(search_problem, instance_id) 
         reset!(search_problem)
         h0 = heuristic(search_problem, start_state(search_problem))
         for w in [rwa_weights, awa_weights...]

@@ -2,7 +2,7 @@ using Random
 
 abstract type AbstractSearchProblem end
 
-seed!(sp::AbstractSearchProblem, seed) = Random.seed!(sp.rng, seed)
+Random.seed!(sp::AbstractSearchProblem, seed) = Random.seed!(sp.rng, seed)
 
 obs(sp::AbstractSearchProblem) = []
 
