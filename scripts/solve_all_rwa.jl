@@ -16,7 +16,7 @@ function solve_all(search_problem, num_instances, rwa_weights, awa_weights, node
                 awa = awastar_search(search_problem, w, walltime_limit, nodes_budget)
             end
             solution_quality = quality(awa.solution_cost, h0)
-            @info "Solved instance" instance_id h0 w awa.nodes_expended awa.num_solutions awa.solution_cost solution_quality
+            @info "Solved instance" instance_id h0 w awa.nodes_expended awa.num_solutions awa.solution_cost solution_quality SearchProblem.info(search_problem)...
 
             if !haskey(solution_qualities_per_approach, w)
                 solution_qualities_per_approach[w] = Float64[]

@@ -4,15 +4,14 @@ using Random
 mutable struct TSP <: SearchProblem.AbstractSearchProblem
     N_range::AbstractArray{Int}
     sparsity_range::Tuple{Float32,Float32}
-    epsilon::Float32
     N::Int
     state::Array{Int}
     costs::Array{Float32,2}
     heuristic_cache::Dict{Array{Int},Float32}
     sparsity::Float32
     rng::MersenneTwister
-    function TSP(N_range::AbstractArray{Int}, sparsity_range::Tuple{Real,Real}, epsilon=0.001)
-        tsp = new(N_range, sparsity_range, epsilon)
+    function TSP(N_range::AbstractArray{Int}, sparsity_range::Tuple{Real,Real})
+        tsp = new(N_range, sparsity_range)
         tsp.rng = MersenneTwister()
         tsp.heuristic_cache = Dict{Array{Int},Float32}()
         tsp.N = rand(tsp.rng, tsp.N_range)
@@ -21,6 +20,16 @@ mutable struct TSP <: SearchProblem.AbstractSearchProblem
     end
 end
 
+function SearchProblem.info(tsp::TSP)
+    return Dict(
+        :sparsity => tsp.sparsity,
+        :num_cities => tsp.N
+    )
+end
+
+function SearchProblem.obs(tsp::TSP)
+    return Float64[tsp.sparsity, tsp.N / maximum(tsp.N_range)]
+end
 
 function SearchProblem.reset!(tsp::TSP)
     empty!(tsp.heuristic_cache)

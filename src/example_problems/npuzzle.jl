@@ -114,6 +114,17 @@ function shuffle_puzzle_hillclimb!(sp::SlidingPuzzle, target_manhat::Int, ϵ=0.1
     return manhat
 end
 
+function SearchProblem.info(sp::SlidingPuzzle)
+    return Dict(
+        :puzzle_manhat => sp.puzzle_manhat,
+        :inverse_cost => sp.inverse
+    )
+end
+
+function SearchProblem.obs(sp::SlidingPuzzle)
+    return Float64[sp.puzzle_manhat / maximum(sp.manhat_range)]
+end
+
 function SearchProblem.reset!(sp::SlidingPuzzle)
     empty!(sp.heuritic_cache)
     sp.side = rand(sp.rng, sp.side_range)
@@ -122,7 +133,7 @@ function SearchProblem.reset!(sp::SlidingPuzzle)
     sp.blank_loc = (sp.side, sp.side)
     target_manhat = rand(sp.rng, sp.manhat_range)
     sp.puzzle_manhat = shuffle_puzzle_hillclimb!(sp, target_manhat)
-        end
+end
 
 
 SearchProblem.start_state(sp::SlidingPuzzle) = sp.puzzle
