@@ -11,7 +11,7 @@ Random.seed!(rwap::RandomWeightAdjustmentPolicy, seed::Integer) = Random.seed!(r
 
 possible_weights(rwap::RandomWeightAdjustmentPolicy) = rwap.weights
 
-(rwap::RandomWeightAdjustmentPolicy)() = rand(rwap.rng, rwap.weights)
+(rwap::RandomWeightAdjustmentPolicy)(;kwargs...) = rand(rwap.rng, rwap.weights)
 
 
 function rwastar_search(search_prob::AbstractSearchProblem, weights::AbstractArray{T}, walltime_limit::Real, nodes_budget::Integer, rwa_seed::Integer) where T <: Real

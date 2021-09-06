@@ -22,14 +22,14 @@ values(mol::MultipleOpenLists) = value(mol.open_lists[1])
 haskey(mol::MultipleOpenLists, key) = key in keys(mol.open_lists[1])
 
 
-function push!(mol::MultipleOpenLists, key::String, node::TreeSearchNode, g::Real, h::Real)
+function push!(mol::MultipleOpenLists, key, node::TreeSearchNode, g::Real, h::Real)
     entry = (node, g, h)
-    my_keys = collect(keys(mol.open_lists))
-    for w in my_keys
+    for w in keys(mol.open_lists)
         f_w = g + w * h
-        push!(mol.open_lists[w], key, entry, f_w)
+        push!(mol.open_lists[w], key, entry, f_w)  # can't optimize further
     end
     mol.stats = update_mean_std_corr(mol.stats..., g, h)
+    return nothing
 end
 
 function pop!(mol::MultipleOpenLists, w::Real)
@@ -48,7 +48,7 @@ function peek(mol::MultipleOpenLists, w::Real)
     return key, node, g, h
 end
 
-function get(mol::MultipleOpenLists, key::String)
+function get(mol::MultipleOpenLists, key)
     if key in keys(mol)
         ((node, g, h), _) = get(mol.open_lists[1], key)
         return node, g, h
@@ -57,15 +57,17 @@ function get(mol::MultipleOpenLists, key::String)
     end
 end
 
-function delete!(mol::MultipleOpenLists, key::String)
+function delete!(mol::MultipleOpenLists, key)
     vals = collect(values(mol.open_lists))
     for ol in vals
         delete!(ol, key)
     end
+    return nothing
 end
 
 function empty!(mol::MultipleOpenLists)
     for ol in values(mol.open_lists)
         empty!(ol)
     end
+    return nothing
 end

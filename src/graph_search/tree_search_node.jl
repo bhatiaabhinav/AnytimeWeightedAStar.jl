@@ -4,10 +4,10 @@ mutable struct TreeSearchNode{S}
     state::S
     path_cost::Float64
     depth::Int
-    action::Union{String,Nothing}
+    action
     parent::Union{TreeSearchNode{S},Nothing}
     popped_using_w::Float64
-    function TreeSearchNode(state::S, path_cost::Real, depth::Integer, action::Union{AbstractString,Nothing}, parent::Union{TreeSearchNode,Nothing}) where {S}
+    function TreeSearchNode(state::S, path_cost::Real, depth::Integer, action, parent::Union{TreeSearchNode,Nothing}) where {S}
         n = new{S}(state, path_cost, depth, action)
         n.parent = parent
         n.popped_using_w = 0
@@ -19,7 +19,7 @@ TreeSearchNode(state) = TreeSearchNode(state, 0, 0, nothing, nothing)
 
 function get_solution(node::TreeSearchNode{S}) where {S}
     if isnothing(node.parent.parent)
-        return String[node.action], Float64[node.popped_using_w]
+        return [node.action], Float64[node.popped_using_w]
     else
         sol, w_trace = get_solution(node.parent)
         push!(sol, node.action)

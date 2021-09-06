@@ -20,4 +20,4 @@ goal_test(sp::AbstractSearchProblem, state) = false
 
 heuristic(sp::AbstractSearchProblem, state) = 0
 
-key(sp::AbstractSearchProblem, state) = repr(state)
+key(sp::AbstractSearchProblem, state) = state

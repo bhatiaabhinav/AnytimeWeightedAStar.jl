@@ -2,27 +2,27 @@ using ..SearchProblem
 using ..SearchProblem: reset!
 using Random
 
-puzzle_actions = Dict{String,Tuple{Int,Int}}(
-        "UP" => (-1, 0),
-        "DOWN" => (1, 0),
-        "LEFT" => (0, -1),
-        "RIGHT" => (0, 1))
+const sliding_puzzle_actions = Dict{Symbol,Tuple{Int,Int}}(
+        :UP => (-1, 0),
+        :DOWN => (1, 0),
+        :LEFT => (0, -1),
+        :RIGHT => (0, 1))
 
 mutable struct SlidingPuzzle <: SearchProblem.AbstractSearchProblem
     side_range::AbstractArray{Int}
     manhat_range::AbstractArray{Int}
     inverse::Bool
     side::Int
-    puzzle::Array{Int8,2}
+    puzzle::Array{UInt8,2}
     blank_loc::Tuple{Int,Int}
     puzzle_manhat::Int
-    goal_puzzle::Array{Int8,2}
-    heuritic_cache::Dict{Array{Int8,2},Float32}
+    goal_puzzle::Array{UInt8,2}
+    heuritic_cache::Dict{Array{UInt8,2},Float32}
     rng::MersenneTwister
     function SlidingPuzzle(side_range::AbstractArray{Int}, manhat_range::AbstractArray{Int}; inverse::Bool=false)
         sp = new(side_range, manhat_range, inverse)
         sp.rng = MersenneTwister()
-        sp.heuritic_cache = Dict{Array{Int8,2},Float32}()
+        sp.heuritic_cache = Dict{Array{UInt8,2},Float32}()
         reset!(sp)
         return sp
     end
@@ -39,7 +39,7 @@ function max_possible_manhat(side::Int)
     return 4n * s
 end
 
-function initial_puzzle!(puzzle::Array{Int8,2})
+function initial_puzzle!(puzzle::Array{UInt8,2})
     side = size(puzzle)[1]
     for column in 1:side
         for row in 1:side
@@ -52,15 +52,15 @@ function initial_puzzle!(puzzle::Array{Int8,2})
 end
 
 function initial_puzzle(side::Int)
-    puzzle = Array{Int8}(undef, side, side)
+    puzzle = Array{UInt8}(undef, side, side)
     return initial_puzzle!(puzzle)
 end
 
 is_valid_blank_location(side::Int, blank_location::Tuple{Int,Int}) = all((1, 1) .<= blank_location .<= (side, side))
 
 function puzzle_legal_actions(side::Int, blank_location::Tuple{Int,Int})
-    actions_array = String[]
-    for (k, v) in puzzle_actions
+    actions_array = Symbol[]
+    for (k, v) in sliding_puzzle_actions
         new_blank_loc = blank_location .+ v
         if is_valid_blank_location(side, new_blank_loc)  # UP
             push!(actions_array, k)
@@ -69,25 +69,38 @@ function puzzle_legal_actions(side::Int, blank_location::Tuple{Int,Int})
     return actions_array
 end
 
-function compute_manhat(puzzle::Array{Int8,2}, to_puzzle::Array{Int8,2}, inverse=false)
+l1_norm(p1, p2) = sum(abs.(p1 .- p2))
+
+function findvalue(puzzle::Array{UInt8, 2}, value::UInt8)::Tuple{Int, Int}
     side = size(puzzle)[1]
-    manhat = 0
-    l1_norm(p1, p2) = sum(abs.(p1 .- p2))
-    for to_c in 1:side
-        for to_r in 1:side
+    for c in 1:side
+        for r in 1:side
+            if puzzle[r, c] == value
+                return r, c
+            end
+        end
+    end
+    return -1, -1
+end
+
+function compute_manhat(puzzle::Array{UInt8,2}, to_puzzle::Array{UInt8,2}, inverse=false)
+    side = size(puzzle)[1]
+    manhat = 0.0
+    for to_c::Int in 1:side
+        for to_r::Int in 1:side
             value = to_puzzle[to_r, to_c]
-            if value == 0 continue end
-            r, c = Tuple(indexin(value, puzzle)[1])
+            value == 0 && continue
+            r, c = findvalue(puzzle, value)
             manhat += inverse ? l1_norm((r, c), (to_r, to_c)) / Float32(value) : l1_norm((r, c), (to_r, to_c))
         end
     end
     return manhat
 end
 
-function compute_next_puzzle(puzzle::Array{Int8,2}, blank_loc::Tuple{Int,Int}, action::String)
+function compute_next_puzzle(puzzle::Array{UInt8,2}, blank_loc::Tuple{Int,Int}, action::Symbol)
     new_puzzle = copy(puzzle)
     blank_r, blank_c = blank_loc
-    new_blank_r, new_blank_c = blank_loc .+ puzzle_actions[action]
+    new_blank_r, new_blank_c = blank_loc .+ sliding_puzzle_actions[action]
     new_puzzle[blank_r, blank_c] = new_puzzle[new_blank_r, new_blank_c]
     new_puzzle[new_blank_r, new_blank_c] = 0
     new_blank_loc = (new_blank_r, new_blank_c)
@@ -95,7 +108,7 @@ function compute_next_puzzle(puzzle::Array{Int8,2}, blank_loc::Tuple{Int,Int}, a
 end
 
 function shuffle_puzzle_hillclimb!(sp::SlidingPuzzle, target_manhat::Int, ϵ=0.1)
-    cache = sp.inverse ? Dict{Array{Int8,2},Float32}() : sp.heuritic_cache
+    cache = sp.inverse ? Dict{Array{UInt8,2},Float32}() : sp.heuritic_cache
     manhat = haskey(cache, sp.puzzle) ? cache[sp.puzzle] : compute_manhat(sp.puzzle, sp.goal_puzzle)
     cache[sp.puzzle] = manhat
     while manhat < target_manhat
@@ -138,10 +151,20 @@ end
 
 SearchProblem.start_state(sp::SlidingPuzzle) = sp.puzzle
 
+function findmovedtile(from_puzzle::Array{UInt8,2}, to_puzzle::Array{UInt8,2})
+    side = size(from_puzzle)[1]
+    for c in 1:side
+        for r in 1:side
+            if from_puzzle[r, c] != to_puzzle[r, c]
+                return max(from_puzzle[r, c], to_puzzle[r, c])  # one of them is zero, the other is the moved tile
+            end
+        end
+    end
+end
 
-function SearchProblem.cost(sp::SlidingPuzzle, state::Array{Int8,2}, action::String, next_state::Array{Int8,2})
+function SearchProblem.cost(sp::SlidingPuzzle, state::Array{UInt8,2}, action::Symbol, next_state::Array{UInt8,2})
     if sp.inverse
-moved_tile = sum(abs.(state .- next_state)) / 2
+        moved_tile = findmovedtile(state, next_state)
         return 1 / moved_tile
     else
         return 1
@@ -149,23 +172,23 @@ moved_tile = sum(abs.(state .- next_state)) / 2
 end
 
 
-SearchProblem.goal_test(sp::SlidingPuzzle, state::Array{Int8,2}) = state == sp.goal_puzzle
+SearchProblem.goal_test(sp::SlidingPuzzle, state::Array{UInt8,2}) = state == sp.goal_puzzle
 
-function SearchProblem.heuristic(sp::SlidingPuzzle, state::Array{Int8,2})
+function SearchProblem.heuristic(sp::SlidingPuzzle, state::Array{UInt8,2})
     if haskey(sp.heuritic_cache, state)
         return sp.heuritic_cache[state]
     else
         h = compute_manhat(state, sp.goal_puzzle, sp.inverse)
-        sp.heuritic_cache[state] = h
-    return h
+        sp.heuritic_cache[state] = h  
+        return h
     end
 end
 
-function SearchProblem.successors(sp::SlidingPuzzle, state::Array{Int8,2})
+function SearchProblem.successors(sp::SlidingPuzzle, state::Array{UInt8,2})
     side = size(state)[1]
-    blank_loc = Tuple(indexin(0, state)[1])
+    blank_loc = findvalue(state, 0x00)
     actions = puzzle_legal_actions(side, blank_loc)
-    succ = Set{Tuple{Array{Int8,2},String}}()
+    succ = Set{Tuple{Array{UInt8,2}, Symbol}}()
     for a in actions
         next_puzzle, _ = compute_next_puzzle(state, blank_loc, a)
         push!(succ, (next_puzzle, a))

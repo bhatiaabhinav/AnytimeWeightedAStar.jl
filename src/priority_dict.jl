@@ -3,17 +3,17 @@ import Base: push!, length, keys, pop!, peek, get, delete!, haskey, empty!
 
 mutable struct PriorityDict
     pq::PriorityQueue
-    key_node_map::Dict{String,Any}
+    key_node_map::Dict{Any,Any}
 end
 
-PriorityDict() = PriorityDict(PriorityQueue(), Dict{String,Any}())
+PriorityDict() = PriorityDict(PriorityQueue(), Dict{Any,Any}())
 
 length(pd::PriorityDict) = length(pd.pq)
 
 haskey(pd::PriorityDict, key) = key in keys(pd.key_node_map)
 keys(pd::PriorityDict) = keys(pd.key_node_map)
 
-function push!(pd::PriorityDict, key, value, priority)
+function push!(pd::PriorityDict, key, value, priority::Float64)
     if haskey(pd, key)
         error("Key already present")
     end

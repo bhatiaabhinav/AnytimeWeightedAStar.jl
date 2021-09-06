@@ -7,13 +7,13 @@ using Statistics
 
 abstract type AbstractWeightAdjustmentPolicy end
 possible_weights(wap::AbstractWeightAdjustmentPolicy) = [1.0]
-(wap::AbstractWeightAdjustmentPolicy)() = 1.0
+(wap::AbstractWeightAdjustmentPolicy)(;kwargs...) = 1.0
 
 struct ConstantWeightPolicy <: AbstractWeightAdjustmentPolicy
     weight::Float64
 end
 possible_weights(cwp::ConstantWeightPolicy) = [cwp.weight]
-(cwp::ConstantWeightPolicy)() = cwp.weight
+(cwp::ConstantWeightPolicy)(;kwargs...) = cwp.weight
 
 mutable struct AWAStar{WAP <: AbstractWeightAdjustmentPolicy} <: AbstractTreeSearchAlgorithm
     weight::Float64
@@ -22,8 +22,8 @@ mutable struct AWAStar{WAP <: AbstractWeightAdjustmentPolicy} <: AbstractTreeSea
     weight_adjustment_policy::WAP
 
     open_lists::MultipleOpenLists
-    closed_set::Set{String}
-    path_costs::Dict{String,Float64}
+    closed_set::Set{Any}
+    path_costs::Dict{Any, Float64}
     start_time::Float64
     stop_time::Union{Nothing,Float64}
     nodes_expended::Int
@@ -34,8 +34,8 @@ mutable struct AWAStar{WAP <: AbstractWeightAdjustmentPolicy} <: AbstractTreeSea
     all_solutions_costs::Vector{Float64}
     all_solutions_walltimes::Vector{Float64}
     all_solutions_nodes_expended::Vector{Int}
-    all_solutions::Vector{Vector{String}}
-    solution::Union{Vector{String},Nothing}
+    all_solutions::Vector{Vector{Any}}
+    solution::Union{Vector{Any},Nothing}
     solution_cost::Float64
     solution_walltime::Union{Float64,Nothing}
     solution_nodes_expended::Union{Int,Nothing}
@@ -44,12 +44,12 @@ mutable struct AWAStar{WAP <: AbstractWeightAdjustmentPolicy} <: AbstractTreeSea
     function AWAStar(weight::Real, walltime_limit::Real, nodes_budget::Integer, wap::WAP) where WAP <: AbstractWeightAdjustmentPolicy
         awastar = new{WAP}(weight, walltime_limit, nodes_budget, wap)
         awastar.open_lists = MultipleOpenLists(possible_weights(wap))
-        awastar.closed_set = Set{String}()
-        awastar.path_costs = Dict{String,Float64}()
+        awastar.closed_set = Set{Any}()
+        awastar.path_costs = Dict{Any,Float64}()
         awastar.all_solutions_costs = Float64[]
         awastar.all_solutions_walltimes = Float64[]
         awastar.all_solutions_nodes_expended = Int[]
-        awastar.all_solutions = Vector{String}[]
+        awastar.all_solutions = Vector{Any}[]
         return awastar
     end
 end
@@ -127,7 +127,7 @@ function GraphSearch.node_expansion_policy(awastar::AWAStar, sp::AbstractSearchP
     node_key = nothing
     while node_f >= awastar.solution_cost
         @assert length(awastar.open_lists) > 0 "Should not be possible"
-        awastar.weight = awastar.weight_adjustment_policy()
+        awastar.weight = awastar.weight_adjustment_policy(num_solutions=awastar.num_solutions)
         node_key, node, node_g, node_h = pop!(awastar.open_lists, awastar.weight)
         node.popped_using_w = awastar.weight
         node_f = node_g + node_h
@@ -138,6 +138,7 @@ end
 
 function GraphSearch.before_node_expansion!(awastar::AWAStar, node::TreeSearchNode, sp::AbstractSearchProblem)
     push!(awastar.closed_set, key(sp, node.state))
+    return nothing
 end
 
 function GraphSearch.on_node_generation!(awastar::AWAStar, child_node::TreeSearchNode, sp::AbstractSearchProblem)
@@ -155,6 +156,7 @@ function GraphSearch.on_node_generation!(awastar::AWAStar, child_node::TreeSearc
             awastar.solution_cost = child_node_f
             awastar.solution_walltime = wall_time(awastar)
             awastar.solution_nodes_expended = awastar.nodes_expended
+            # println("sol cost", awastar.solution_cost, " at ", awastar.nodes_expended, " nodes.")
             awastar.solution, awastar.solution_w_trace = get_solution(child_node)
             awastar.num_solutions += 1
             push!(awastar.all_solutions_walltimes, awastar.solution_walltime)
@@ -188,6 +190,7 @@ end
 
 function GraphSearch.on_node_expansion_finish!(awastar::AWAStar, node::TreeSearchNode, sp::AbstractSearchProblem)
     awastar.nodes_expended += 1
+    return nothing
 end
 
 function GraphSearch.on_stop!(awastar::AWAStar, sp::AbstractSearchProblem)
