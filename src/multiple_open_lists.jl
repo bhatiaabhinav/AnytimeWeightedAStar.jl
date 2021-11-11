@@ -62,7 +62,7 @@ function pop!(mol::MultipleOpenLists{S}, weight::Float64)::Tuple{TreeSearchNode{
 end
 
 function peek(mol::MultipleOpenLists{S}, w::Float64)::Tuple{TreeSearchNode{S}, Float64, Float64} where S
-    pq = mol.pqs[idxof(w, mol.weights)]
+    @inbounds pq = mol.pqs[idxof(w, mol.weights)]
     (_, _, key), handle = top_with_handle(pq)
     node, g, h, handle = mol.key_to_nodehandle_map[key]
     return node, g, h

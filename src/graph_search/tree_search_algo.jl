@@ -12,11 +12,10 @@ on_stop!(search_algo::AbstractTreeSearchAlgorithm, search_prob::AbstractSearchPr
 
 function graph_search!(search_algo::AbstractTreeSearchAlgorithm{S}, search_prob::AbstractSearchProblem{S}) where S
     init!(search_algo, search_prob)
-    children_nodes_buffer = TreeSearchNode{S}[]
     while !stop_condition(search_algo, search_prob)
         node::TreeSearchNode{S} = node_expansion_policy(search_algo, search_prob)
         before_node_expansion!(search_algo, node, search_prob)
-        for child_node::TreeSearchNode{S} in get_children_nodes(search_prob, node, children_nodes_buffer)
+        for child_node::TreeSearchNode{S} in get_children_nodes(search_prob, node)
             on_node_generation!(search_algo, child_node, search_prob)
         end
         on_node_expansion_finish!(search_algo, node, search_prob)
