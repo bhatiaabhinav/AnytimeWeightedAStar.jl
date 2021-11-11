@@ -1,6 +1,6 @@
 using ..SearchProblem: AbstractSearchProblem
 
-abstract type AbstractTreeSearchAlgorithm end
+abstract type AbstractTreeSearchAlgorithm{S} end
 
 init!(search_algo::AbstractTreeSearchAlgorithm, search_prob::AbstractSearchProblem) = error("not implemented")
 stop_condition(search_algo::AbstractTreeSearchAlgorithm, search_prob::AbstractSearchProblem) = error("not implemented")
@@ -10,20 +10,17 @@ on_node_generation!(search_algo::AbstractTreeSearchAlgorithm, child_node::TreeSe
 on_node_expansion_finish!(search_algo::AbstractTreeSearchAlgorithm, node::TreeSearchNode,search_prob::AbstractSearchProblem) = error("not implemented")
 on_stop!(search_algo::AbstractTreeSearchAlgorithm, search_prob::AbstractSearchProblem) = error("not implemented")
 
-
-function graph_search!(search_algo::AbstractTreeSearchAlgorithm, search_prob::AbstractSearchProblem)
+function graph_search!(search_algo::AbstractTreeSearchAlgorithm{S}, search_prob::AbstractSearchProblem{S}) where S
     init!(search_algo, search_prob)
-    # yield()
+    children_nodes_buffer = TreeSearchNode{S}[]
     while !stop_condition(search_algo, search_prob)
-        node = node_expansion_policy(search_algo, search_prob)  # 0.000007 seconds (42 allocations: 1.531 KiB)
-        before_node_expansion!(search_algo, node, search_prob) # 0.000003 seconds (48 allocations: 2.219 KiB)  -> 0.000003 seconds (47 allocations: 2.203 KiB) -> 0 most of the times after switching from String keys to Any keys
-        for child_node in get_children_nodes(search_prob, node)  # 0.000010 seconds (99 allocations: 6.234 KiB)
-            on_node_generation!(search_algo, child_node, search_prob)  # 0.000023 seconds (244 allocations: 37.469 KiB) -> 0.000021 seconds (200 allocations: 35.406 KiB) -> 0.000006 seconds (13 allocations: 528 bytes) after my custom findvalue function.  # can't optimize further.
+        node::TreeSearchNode{S} = node_expansion_policy(search_algo, search_prob)
+        before_node_expansion!(search_algo, node, search_prob)
+        for child_node::TreeSearchNode{S} in get_children_nodes(search_prob, node, children_nodes_buffer)
+            on_node_generation!(search_algo, child_node, search_prob)
         end
-        on_node_expansion_finish!(search_algo, node, search_prob) # 0.000000 seconds
-        # yield()
+        on_node_expansion_finish!(search_algo, node, search_prob)
     end
     on_stop!(search_algo, search_prob)
     return search_algo
 end
-

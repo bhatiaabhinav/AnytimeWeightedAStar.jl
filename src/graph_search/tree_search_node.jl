@@ -28,12 +28,12 @@ function get_solution(node::TreeSearchNode{S}) where {S}
     end
 end
 
-function get_children_nodes(sp::AbstractSearchProblem, node::TreeSearchNode{S}) where {S}
-    arr_child_nodes = TreeSearchNode{S}[]
-    for (successor_state, successor_action) in successors(sp, node.state)
+function get_children_nodes(sp::AbstractSearchProblem{S}, node::TreeSearchNode{S}, output_buffer::Vector{TreeSearchNode{S}})::Vector{TreeSearchNode{S}} where {S}
+    empty!(output_buffer)
+    for (successor_state::S, successor_action) in successors(sp, node.state)
         path_cost = node.path_cost + cost(sp, node.state, successor_action, successor_state)
         child_node = TreeSearchNode(successor_state, path_cost, node.depth + 1, successor_action, node)
-        push!(arr_child_nodes, child_node)
+        push!(output_buffer, child_node)
     end
-    return arr_child_nodes
+    return output_buffer
 end

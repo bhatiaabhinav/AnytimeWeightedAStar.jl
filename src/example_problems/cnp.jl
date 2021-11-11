@@ -10,25 +10,25 @@ puzzle_actions = Dict{String,Tuple{Int,Int}}(
 
 mutable struct City
     position::Tuple{Float32,Float32}
-    num_places::Int32
-    np::Int32
+    num_places::Int
+    np::Int
     side::Float32
     places_positions::Array{Tuple{Float32,Float32}}
-    places_neighbors::Array{Array{Int32}}
+    places_neighbors::Array{Array{Int}}
     costs::Array{Float32,2}
     function City(position::Tuple{Real,Real}, num_places::Integer, np::Integer, side::Real=1)
         city = new(position, num_places, np, side)
         city.places_positions = Array{Tuple{Int,Int}}(undef, num_places)
-        city.places_neighbors = fill(Int32[], num_places)
+        city.places_neighbors = fill(Int[], num_places)
         city.costs = fill(Inf32, num_places, num_places)
         return city
     end
 end
 
-euclid_distance(point1, point2) = sqrt(sum((point1 .- point2).^2))
+@inline euclid_distance(point1, point2) = sqrt(sum((point1 .- point2).^2))
 
 function reset_city!(city::City, position::Tuple{Real,Real}, rng::MersenneTwister)
-    connected(place1, place2) = city.costs[place1, place2] < Inf
+    @inline connected(place1, place2) = city.costs[place1, place2] < Inf
     function connect!(place1, place2)
         if !connected(place1, place2)
             distance = euclid_distance(city.places_positions[place1], city.places_positions[place2])
@@ -39,7 +39,7 @@ function reset_city!(city::City, position::Tuple{Real,Real}, rng::MersenneTwiste
     end
 
     city.position = position
-    city.places_neighbors = [Int32[] for _ in 1:city.num_places]
+    city.places_neighbors = [Int[] for _ in 1:city.num_places]
     fill!(city.costs, Inf32)
 
     for place in 1:city.num_places
@@ -57,24 +57,24 @@ function reset_city!(city::City, position::Tuple{Real,Real}, rng::MersenneTwiste
 end
 
 
-mutable struct CityNavigation <: SearchProblem.AbstractSearchProblem
-    num_cities::Int32
-    num_places::Int32
-    nc::Int32
-    np::Int32
-    side::Float32
-    city_side::Float32
+mutable struct CityNavigation <: SearchProblem.AbstractSearchProblem{Tuple{Int, Int}}
+    num_cities::Int
+    num_places::Int
+    nc::Int
+    np::Int
+    side::Float64
+    city_side::Float64
     cities::Array{City,1}
-    cities_neighbors::Array{Array{Int32}}
+    cities_neighbors::Array{Array{Int}}
     costs::Array{Float32,2}
     rng::MersenneTwister
-    start_loc::Tuple{Int32,Int32}
-    end_loc::Tuple{Int32,Int32}
+    start_loc::Tuple{Int,Int}
+    end_loc::Tuple{Int,Int}
     function CityNavigation(num_cities::Integer, num_places::Integer, nc::Integer, np::Integer, side::Real, city_side::Real)
         cnp = new(num_cities, num_places, nc, np, side, city_side)
         cnp.rng = MersenneTwister()
         cnp.cities = [City((0, 0), num_places, np, city_side) for _ in 1:num_cities]
-        cnp.cities_neighbors = fill(Int32[], num_cities)
+        cnp.cities_neighbors = fill(Int[], num_cities)
         cnp.costs = fill(Inf32, num_cities, num_cities)
         cnp.start_loc = cnp.end_loc = (0, 0)
     return cnp
@@ -83,7 +83,7 @@ end
 
 
 function SearchProblem.reset!(cnp::CityNavigation)
-    connected(cityid1, cityid2) = cnp.costs[cityid1, cityid2] < Inf
+    @inline connected(cityid1, cityid2) = cnp.costs[cityid1, cityid2] < Inf
     function connect!(cityid1, cityid2)
         if !connected(cityid1, cityid2)
             distance = euclid_distance(cnp.cities[cityid1].position, cnp.cities[cityid2].position)
@@ -93,7 +93,7 @@ function SearchProblem.reset!(cnp::CityNavigation)
         end
     end
 
-    cnp.cities_neighbors = [Int32[] for _ in 1:cnp.num_cities]
+    cnp.cities_neighbors = [Int[] for _ in 1:cnp.num_cities]
     fill!(cnp.costs, Inf32)
     for cityid in 1:cnp.num_cities
         reset_city!(cnp.cities[cityid], Tuple(rand(cnp.rng, Float32, 2) * cnp.side), cnp.rng)
@@ -116,29 +116,29 @@ function SearchProblem.reset!(cnp::CityNavigation)
 end
 
 
-SearchProblem.start_state(cnp::CityNavigation) = cnp.start_loc
+@inline SearchProblem.start_state(cnp::CityNavigation) = cnp.start_loc
 
-function SearchProblem.cost(cnp::CityNavigation, state::Tuple{Integer,Integer}, action::String, next_state::Tuple{Integer,Integer})
-cityid1, placeid1 = state
+@inline function SearchProblem.cost(cnp::CityNavigation, state::Tuple{Integer,Integer}, action::String, next_state::Tuple{Integer,Integer})::Float64
+    cityid1, placeid1 = state
     cityid2, placeid2 = next_state
     return cityid1 == cityid2 ? cnp.cities[cityid1].costs[placeid1, placeid2] : cnp.costs[cityid1, cityid2]
 end
 
-function SearchProblem.goal_test(cnp::CityNavigation, state)
+@inline function SearchProblem.goal_test(cnp::CityNavigation, state::Tuple{Int, Int})::Bool
     return state == cnp.end_loc
 end
 
-function SearchProblem.heuristic(cnp::CityNavigation, state)
+@inline function SearchProblem.heuristic(cnp::CityNavigation, state::Tuple{Int, Int})::Float64
     cityid, placeid = state
     dest_cityid, dest_placeid = cnp.end_loc
     return euclid_distance(cnp.cities[cityid].places_positions[placeid],
                         cnp.cities[dest_cityid].places_positions[dest_placeid])
 end
 
-function SearchProblem.successors(cnp::CityNavigation, state)
+function SearchProblem.successors(cnp::CityNavigation, state::Tuple{Int, Int})
     cur_city_id, cur_place_id = state
     cur_city = cnp.cities[cur_city_id]
-    succ = Set{Tuple{Tuple{Int32,Int32},String}}()
+    succ = Set{Tuple{Tuple{Int,Int},String}}()
     for neighbor_place_id in cur_city.places_neighbors[cur_place_id]
         action = "goto ($cur_city_id, $neighbor_place_id)"
         next_state = (cur_city_id, neighbor_place_id)

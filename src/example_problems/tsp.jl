@@ -1,7 +1,7 @@
 using ..SearchProblem
 using Random
 
-mutable struct TSP <: SearchProblem.AbstractSearchProblem
+mutable struct TSP <: SearchProblem.AbstractSearchProblem{Vector{Int}}
     N_range::AbstractArray{Int}
     sparsity_range::Tuple{Float32,Float32}
     N::Int
@@ -64,23 +64,23 @@ function SearchProblem.reset!(tsp::TSP)
     tsp.sparsity = (max_connections - num_connections) / max_connections
 end
 
-function SearchProblem.start_state(tsp::TSP)
+@inline function SearchProblem.start_state(tsp::TSP)::Vector{Int}
     return tsp.state
 end
 
-function SearchProblem.cost(tsp::TSP, state::Array{Int}, action::String, next_state::Array{Int})
+function SearchProblem.cost(tsp::TSP, state::Array{Int}, action::String, next_state::Array{Int})::Float64
     return tsp.costs[state[end], next_state[end]]
 end
 
-function SearchProblem.goal_test(tsp::TSP, state::Array{Int})
+@inline function SearchProblem.goal_test(tsp::TSP, state::Array{Int})::Bool
     if length(state) == tsp.N + 1
         return true
     else
         return false
     end
-    end
+end
 
-function mst_prims(costs::Array{Float32,2})
+function mst_prims(costs::Array{Float32,2})::Float64
     N = size(costs)[1]
     mst_nodes = Set{Int}()
     key_vals::Array{Float32} = fill(Inf32, N)
@@ -99,7 +99,7 @@ function mst_prims(costs::Array{Float32,2})
     return mst_cost
 end
 
-function SearchProblem.heuristic(tsp::TSP, state)
+function SearchProblem.heuristic(tsp::TSP, state::Vector{Int})::Float64
     h = 0
     if haskey(tsp.heuristic_cache, state)
         return tsp.heuristic_cache[state]
