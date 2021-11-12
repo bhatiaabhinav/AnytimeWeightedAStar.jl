@@ -5,7 +5,7 @@ using Random
 const SP_ACTIONS_MEANINGS = Symbol[:UP, :DOWN, :LEFT, :RIGHT]  # In this order to generate children
 const SP_ACTIONS_DIRECTIONS = Tuple{Int, Int}[(-1, 0), (1, 0), (0, -1), (0, 1)]
 
-mutable struct SlidingPuzzle <: SearchProblem.AbstractSearchProblem{Matrix{UInt8}}
+mutable struct SlidingPuzzle <: SearchProblem.AbstractSearchProblem{Matrix{UInt8}, Symbol}
     side_range::AbstractArray{Int}
     manhat_range::AbstractArray{Int}
     inverse::Bool

@@ -1,15 +1,15 @@
 using .GraphSearch: TreeSearchNode
 import Base: push!, length, keys, pop!, peek, get, delete!, haskey, values, empty!
 
-mutable struct MultipleOpenLists{S}
-    key_to_nodehandle_map::Dict{S, Tuple{TreeSearchNode{S}, Float64, Float64, Int}}
+mutable struct MultipleOpenLists{S,A}
+    key_to_nodehandle_map::Dict{S, Tuple{TreeSearchNode{S,A}, Float64, Float64, Int}}
     weights::Vector{Float64}
     pqs::Vector{MutableBinaryMinHeap{Tuple{Float64, Int, S}}}
     stats::Tuple{Float64,Float64,Float64,Float64,Float64,Int}
     counter::Int
-    function MultipleOpenLists{S}(weights::AbstractArray{T}) where {S, T <: Real}
-        mol = new{S}()
-        mol.key_to_nodehandle_map = Dict{S, Tuple{TreeSearchNode{S}, Float64, Float64, Int}}()
+    function MultipleOpenLists{S,A}(weights::AbstractArray{T}) where {S,A,T<:Real}
+        mol = new{S,A}()
+        mol.key_to_nodehandle_map = Dict{S, Tuple{TreeSearchNode{S,A}, Float64, Float64, Int}}()
         mol.weights =  convert(Vector{Float64}, weights)
         if !(1.0 in mol.weights)
             mol.weights = vcat(1.0, mol.weights)
@@ -24,10 +24,10 @@ end
 length(mol::MultipleOpenLists) = length(mol.key_to_nodehandle_map)
 keys(mol::MultipleOpenLists) = keys(mol.key_to_nodehandle_map)
 values(mol::MultipleOpenLists) = values(mol.key_to_nodehandle_map)
-haskey(mol::MultipleOpenLists{S}, key::S) where {S} = key in keys(mol.key_to_nodehandle_map)
+haskey(mol::MultipleOpenLists{S,A}, key::S) where {S,A} = key in keys(mol.key_to_nodehandle_map)
 
 
-function push!(mol::MultipleOpenLists{S}, key::S, node::TreeSearchNode{S}, g::Float64, h::Float64)::Nothing where S
+function push!(mol::MultipleOpenLists{S,A}, key::S, node::TreeSearchNode{S,A}, g::Float64, h::Float64)::Nothing where {S,A}
     if haskey(mol, key)
         error("already present")
     end
@@ -48,7 +48,7 @@ end
     findfirst(isequal(weight), weights)
 end
 
-function pop!(mol::MultipleOpenLists{S}, weight::Float64)::Tuple{TreeSearchNode{S}, Float64, Float64} where S
+function pop!(mol::MultipleOpenLists{S,A}, weight::Float64)::Tuple{TreeSearchNode{S,A}, Float64, Float64} where {S,A}
     @inbounds pq = mol.pqs[idxof(weight, mol.weights)]
     (_, _, key), handle = top_with_handle(pq)
     pop!(pq)
@@ -61,18 +61,18 @@ function pop!(mol::MultipleOpenLists{S}, weight::Float64)::Tuple{TreeSearchNode{
     return node, g, h
 end
 
-function peek(mol::MultipleOpenLists{S}, w::Float64)::Tuple{TreeSearchNode{S}, Float64, Float64} where S
+function peek(mol::MultipleOpenLists{S,A}, w::Float64)::Tuple{TreeSearchNode{S,A}, Float64, Float64} where {S,A}
     @inbounds pq = mol.pqs[idxof(w, mol.weights)]
     (_, _, key), handle = top_with_handle(pq)
     node, g, h, handle = mol.key_to_nodehandle_map[key]
     return node, g, h
 end
 
-function get(mol::MultipleOpenLists{S}, key::S)::Tuple{TreeSearchNode{S}, Float64, Float64} where S
+function get(mol::MultipleOpenLists{S,A}, key::S)::Tuple{TreeSearchNode{S,A}, Float64, Float64} where {S,A}
     return mol.key_to_nodehandle_map[key]
 end
 
-function delete!(mol::MultipleOpenLists{S}, key::S)::Nothing where S
+function delete!(mol::MultipleOpenLists{S,A}, key::S)::Nothing where {S,A}
     _, _, _, handle = mol.key_to_nodehandle_map[key]
     @inbounds for i in 1:length(mol.weights)
         delete!(mol.pqs[i], handle)

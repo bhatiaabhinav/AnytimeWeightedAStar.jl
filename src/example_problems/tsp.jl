@@ -1,7 +1,7 @@
 using ..SearchProblem
 using Random
 
-mutable struct TSP <: SearchProblem.AbstractSearchProblem{Vector{UInt8}}
+mutable struct TSP <: SearchProblem.AbstractSearchProblem{Vector{UInt8}, UInt8}
     N_range::AbstractArray{Int}
     sparsity_range::Tuple{Float64,Float64}
     N::Int

@@ -57,7 +57,7 @@ function reset_city!(city::City, position::Tuple{Real,Real}, rng::MersenneTwiste
 end
 
 
-mutable struct CityNavigation <: SearchProblem.AbstractSearchProblem{Tuple{Int, Int}}
+mutable struct CityNavigation <: SearchProblem.AbstractSearchProblem{Tuple{Int, Int}, String}
     num_cities::Int
     num_places::Int
     nc::Int

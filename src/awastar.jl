@@ -15,13 +15,13 @@ end
 @inline possible_weights(cwp::ConstantWeightPolicy) = [cwp.weight]
 @inline (cwp::ConstantWeightPolicy)(;kwargs...)::Float64 = cwp.weight
 
-mutable struct AWAStar{S, WAP <: AbstractWeightAdjustmentPolicy} <: AbstractTreeSearchAlgorithm{S}
+mutable struct AWAStar{S, A, WAP <: AbstractWeightAdjustmentPolicy} <: AbstractTreeSearchAlgorithm{S,A}
     weight::Float64
     walltime_limit::Float64
     nodes_budget::Int
     weight_adjustment_policy::WAP
 
-    open_lists::MultipleOpenLists{S}
+    open_lists::MultipleOpenLists{S,A}
     closed_set::Set{S}
     path_costs::Dict{S, Float64}
     start_time::Float64
@@ -34,22 +34,22 @@ mutable struct AWAStar{S, WAP <: AbstractWeightAdjustmentPolicy} <: AbstractTree
     all_solutions_costs::Vector{Float64}
     all_solutions_walltimes::Vector{Float64}
     all_solutions_nodes_expended::Vector{Int}
-    all_solutions::Vector{Vector{Any}}
-    solution::Union{Vector{Any},Nothing}
+    all_solutions::Vector{Vector{A}}
+    solution::Union{Vector{A},Nothing}
     solution_cost::Float64
     solution_walltime::Union{Float64,Nothing}
     solution_nodes_expended::Union{Int,Nothing}
     solution_w_trace::Union{Vector{Float64},Nothing}
 
-    function AWAStar{S}(weight::Real, walltime_limit::Real, nodes_budget::Integer, wap::WAP) where {S, WAP <: AbstractWeightAdjustmentPolicy}
-        awastar = new{S, WAP}(weight, walltime_limit, nodes_budget, wap)
-        awastar.open_lists = MultipleOpenLists{S}(possible_weights(wap))
+    function AWAStar{S,A}(weight::Real, walltime_limit::Real, nodes_budget::Integer, wap::WAP) where {S,A,WAP<:AbstractWeightAdjustmentPolicy}
+        awastar = new{S,A,WAP}(weight, walltime_limit, nodes_budget, wap)
+        awastar.open_lists = MultipleOpenLists{S,A}(possible_weights(wap))
         awastar.closed_set = Set{S}()
         awastar.path_costs = Dict{S,Float64}()
         awastar.all_solutions_costs = Float64[]
         awastar.all_solutions_walltimes = Float64[]
         awastar.all_solutions_nodes_expended = Int[]
-        awastar.all_solutions = Vector{Any}[]
+        awastar.all_solutions = Vector{A}[]
         return awastar
     end
 end
@@ -73,7 +73,7 @@ end
     nothing
 end
 
-function GraphSearch.init!(awastar::AWAStar, sp::AbstractSearchProblem)
+function GraphSearch.init!(awastar::AWAStar{S,A}, sp::AbstractSearchProblem{S,A}) where {S,A}
     empty!(awastar.open_lists)
     empty!(awastar.closed_set)
     empty!(awastar.path_costs)
@@ -95,14 +95,14 @@ function GraphSearch.init!(awastar::AWAStar, sp::AbstractSearchProblem)
     awastar.stop_time = nothing
 
     starting_state = start_state(sp)
-    start_node = TreeSearchNode(starting_state)
+    start_node = TreeSearchNode{S,A}(starting_state)
     start_node_g, start_node_h = start_node.path_cost, heuristic(sp, starting_state)
     @debug "AWA* Run" awastar.weight_adjustment_policy starting_state start_node_h
     push!(awastar.open_lists, starting_state, start_node, start_node_g, start_node_h)
     awastar.path_costs[starting_state] = start_node_g
 end
 
-function GraphSearch.stop_condition(awastar::AWAStar{S}, sp::AbstractSearchProblem{S})::Bool where S
+function GraphSearch.stop_condition(awastar::AWAStar{S,A}, sp::AbstractSearchProblem{S,A})::Bool where {S,A}
     timeup::Bool = wall_time(awastar) >= awastar.walltime_limit
     budgetup::Bool = awastar.nodes_expended >= awastar.nodes_budget
     converged::Bool = false
@@ -121,9 +121,9 @@ function GraphSearch.stop_condition(awastar::AWAStar{S}, sp::AbstractSearchProbl
     return stop
 end
 
-function GraphSearch.node_expansion_policy(awastar::AWAStar{S}, sp::AbstractSearchProblem{S})::TreeSearchNode{S} where S
+function GraphSearch.node_expansion_policy(awastar::AWAStar{S,A}, sp::AbstractSearchProblem{S,A})::TreeSearchNode{S,A} where {S,A}
     node_f::Float64 = Inf
-    local node::TreeSearchNode{S}
+    local node::TreeSearchNode{S,A}
     while node_f >= awastar.solution_cost
         @assert length(awastar.open_lists) > 0 "Should not be possible"
         awastar.weight = awastar.weight_adjustment_policy(num_solutions=awastar.num_solutions)
@@ -134,12 +134,12 @@ function GraphSearch.node_expansion_policy(awastar::AWAStar{S}, sp::AbstractSear
     return node
 end
 
-function GraphSearch.before_node_expansion!(awastar::AWAStar{S}, node::TreeSearchNode{S}, sp::AbstractSearchProblem{S}) where S
+function GraphSearch.before_node_expansion!(awastar::AWAStar{S,A}, node::TreeSearchNode{S,A}, sp::AbstractSearchProblem{S,A}) where {S,A}
     push!(awastar.closed_set, node.state)
     return nothing
 end
 
-function GraphSearch.on_node_generation!(awastar::AWAStar{S}, child_node::TreeSearchNode{S}, sp::AbstractSearchProblem{S}) where S
+function GraphSearch.on_node_generation!(awastar::AWAStar{S,A}, child_node::TreeSearchNode{S,A}, sp::AbstractSearchProblem{S,A}) where {S,A}
     child_node_g, child_node_h = child_node.path_cost, heuristic(sp, child_node.state)
     child_node_f = child_node_g + child_node_h
     if child_node_f < awastar.solution_cost
@@ -176,22 +176,22 @@ function GraphSearch.on_node_generation!(awastar::AWAStar{S}, child_node::TreeSe
     return nothing
 end
 
-function GraphSearch.on_node_expansion_finish!(awastar::AWAStar{S}, node::TreeSearchNode{S}, sp::AbstractSearchProblem{S}) where S
+function GraphSearch.on_node_expansion_finish!(awastar::AWAStar{S,A}, node::TreeSearchNode{S,A}, sp::AbstractSearchProblem{S,A}) where {S,A}
     awastar.nodes_expended += 1
     return nothing
 end
 
-function GraphSearch.on_stop!(awastar::AWAStar{S}, sp::AbstractSearchProblem{S}) where S
+function GraphSearch.on_stop!(awastar::AWAStar{S,A}, sp::AbstractSearchProblem{S,A}) where {S,A}
     awastar.stop_time = time()
     return nothing
 end
 
 
-function awastar_search_with_dynamic_weights(search_prob::AbstractSearchProblem{S}, weights_adjustment_policy::AbstractWeightAdjustmentPolicy, walltime_limit::Real, nodes_budget::Integer) where S
-    awastar = AWAStar{S}(1, walltime_limit, nodes_budget, weights_adjustment_policy)
+function awastar_search_with_dynamic_weights(search_prob::AbstractSearchProblem{S,A}, weights_adjustment_policy::AbstractWeightAdjustmentPolicy, walltime_limit::Real, nodes_budget::Integer) where {S,A}
+    awastar = AWAStar{S,A}(1, walltime_limit, nodes_budget, weights_adjustment_policy)
     return graph_search!(awastar, search_prob)
 end
 
-function awastar_search(search_prob::AbstractSearchProblem, weight::Real, walltime_limit::Real, nodes_budget::Integer)
+function awastar_search(search_prob::AbstractSearchProblem{S,A}, weight::Real, walltime_limit::Real, nodes_budget::Integer) where {S,A}
     return awastar_search_with_dynamic_weights(search_prob, ConstantWeightPolicy(weight), walltime_limit, nodes_budget)
 end
