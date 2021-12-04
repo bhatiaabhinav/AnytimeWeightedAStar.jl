@@ -2,7 +2,7 @@
 
 Julia Implementation of [Anytime Weighted A* (AWA*)](https://arxiv.org/abs/1110.2737) algorithm and [Randomized Weighted A* (RWA*)](https://ojs.aaai.org/index.php/SOCS/article/download/18558/18347) algorithm (Published at SoCS 2021).
 
-RWA* is a variant of AWA* that randomly adjusts the weight at runtime. It typically outperforms AWA* with any static weight.
+RWA*, a variant of AWA* that randomly adjusts the weight at runtime, usually works better than using any static weight.
 
 ## Install Instructions
 
