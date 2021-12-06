@@ -1,6 +1,6 @@
 name = "AnytimeWeightedAStar"
 uuid = "ec8c4e8f-3dff-4cc6-be8a-faba0f6c4cb5"
-authors = ["Abhinav Bhatia"]
+authors = ["abhinav.bhatia.me@gmail.com"]
 version = "2.3.0"
 
 [deps]

@@ -6,12 +6,10 @@ RWA*, a variant of AWA* that randomly adjusts the weight at runtime, usually wor
 
 ## Install Instructions
 
-```bash
-git clone https://github.com/bhatiaabhinav/AnytimeWeightedAStar.jl
-cd AnytimeWeightedAStar.jl/
+```julia
+using Pkg
+Pkg.add("AnytimeWeightedAStar")
 ```
-Set julia project to current folder by setting environment variable `export JULIA_PROJECT=.`.
-Run Julia REPL (i.e type `julia` in command line). Then press `]` to enter package management mode and type `instantiate`. This will install all the dependencies.
 
 ## Examples
 ```julia
