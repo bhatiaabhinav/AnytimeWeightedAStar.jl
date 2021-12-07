@@ -1,7 +1,7 @@
 name = "AnytimeWeightedAStar"
 uuid = "ec8c4e8f-3dff-4cc6-be8a-faba0f6c4cb5"
 authors = ["abhinav.bhatia.me@gmail.com"]
-version = "2.3.0"
+version = "2.4.0"
 
 [deps]
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
