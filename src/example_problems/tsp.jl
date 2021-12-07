@@ -9,6 +9,7 @@ mutable struct TSP <: SearchProblem.AbstractSearchProblem{Vector{UInt8}, UInt8}
     costs::Array{Float64,2}
     heuristic_cache::Dict{Array{UInt8},Float64}
     sparsity::Float64
+    lk::ReentrantLock
     rng::MersenneTwister
     function TSP(N_range::AbstractArray{Int}, sparsity_range::Tuple{Real,Real})
         tsp = new(N_range, sparsity_range)
@@ -16,6 +17,7 @@ mutable struct TSP <: SearchProblem.AbstractSearchProblem{Vector{UInt8}, UInt8}
         tsp.heuristic_cache = Dict{Array{Int},Float64}()
         tsp.N = rand(tsp.rng, tsp.N_range)
         tsp.costs = fill(Inf32, tsp.N, tsp.N)
+        tsp.lk = ReentrantLock()
         return tsp
     end
 end
@@ -40,7 +42,7 @@ function SearchProblem.reset!(tsp::TSP)
 
     num_connections = 0
     @inline connected(cityid1, cityid2) = tsp.costs[cityid1, cityid2] < Inf
-    @inline function connect!(cityid1, cityid2, min_distance=1, max_distance=50)
+    @inline function connect!(cityid1, cityid2, min_distance=0.01, max_distance=1)
         if !connected(cityid1, cityid2)
             distance = min_distance + rand(tsp.rng, Float64) *  (max_distance - min_distance)
             tsp.costs[cityid1, cityid2] = tsp.costs[cityid2, cityid1] = distance
@@ -80,45 +82,44 @@ end
     end
 end
 
-function mst_prims(costs::Array{Float64,2})::Float64
-    N = size(costs)[1]
-    mst_nodes = Set{Int}()
-    key_vals::Array{Float64} = fill(Inf32, N)
-    key_vals[1] = 0
-    while length(mst_nodes) < N
-        candidates = setdiff(1:N, mst_nodes)
-        candidate_values = @inbounds Float64[key_vals[c] for c in candidates]
-        best_node = minimum(zip(candidate_values, candidates))[2]
-        push!(mst_nodes, best_node)
-        adjacent_nodes::Vector{Int} = setdiff(filter(node -> 0 < costs[best_node, node] < Inf,  1:N), mst_nodes)
-        @simd for adjacent in adjacent_nodes
-            @inbounds key_vals[adjacent] =  ifelse(key_vals[adjacent] < costs[best_node, adjacent], key_vals[adjacent], costs[best_node, adjacent])
+function mst_prims(G::AbstractMatrix{Float64})::Float64
+    V::Int = size(G)[1]  # num verts
+    C::Vector{Float64} = fill(Inf, V)  # cost of mst-vertex to reach vertex v
+    Q::Vector{Bool} = fill(false, V)  # verts in mst
+    q::Int = 0  # size of Q
+    C[1] = 0  # cost to reach first vertex
+    while q < V
+        v = Iterators.argmin(Iterators.map(v -> Q[v] ? Inf : C[v], 1:V))
+        Q[v] = true
+        q += 1
+        for w in Iterators.filter(w -> (0 < G[v, w] < Inf) && !Q[w], 1:V)
+            @inbounds C[w] = min(G[v, w], C[w])
         end
     end
-    mst_cost = sum(key_vals)
-    return mst_cost
+    return sum(C)
 end
 
 function SearchProblem.heuristic(tsp::TSP, state::Vector{UInt8})::Float64
-    if haskey(tsp.heuristic_cache, state)
-        return tsp.heuristic_cache[state]
-    else
-        h::Float64 = 0
-        mst_cities = Set(1:tsp.N)
-
-        if length(state) >= 2
-            setdiff!(mst_cities, state[1:end - 1]) # remove all visited except current
-        end
-        mst_cities = sort(collect(mst_cities))
-
-        if length(mst_cities) > 0
-            h = mst_prims(tsp.costs[mst_cities, mst_cities])
-        end
-
-        # TODO: Consider keeping starting city always in the mst cities.
-        tsp.heuristic_cache[state] = h
-        return h
+    if length(state) == tsp.N + 1
+        return 0.0
     end
+    lock(tsp.lk) do
+        if haskey(tsp.heuristic_cache, state)
+            return tsp.heuristic_cache[state]
+        end
+    end
+
+    mst_cities_mask::Vector{Bool} = fill(true, tsp.N)
+    if length(state) >= 2
+        mst_cities_mask[state[2:end-1]] .= false
+    end
+
+    h::Float64 = mst_prims(@views tsp.costs[mst_cities_mask, mst_cities_mask])
+
+    lock(tsp.lk) do
+        tsp.heuristic_cache[state] = h
+    end
+    return h
 end
 
 function SearchProblem.successors(tsp::TSP, state::Array{UInt8})
