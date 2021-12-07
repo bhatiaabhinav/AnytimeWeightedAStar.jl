@@ -15,11 +15,13 @@ mutable struct SlidingPuzzle <: SearchProblem.AbstractSearchProblem{Matrix{UInt8
     puzzle_manhat::Int
     goal_puzzle::Array{UInt8,2}
     heuritic_cache::Dict{Array{UInt8,2},Float64}
+    lk::ReentrantLock
     rng::MersenneTwister
     function SlidingPuzzle(side_range::AbstractArray{Int}, manhat_range::AbstractArray{Int}; inverse::Bool=false)
         sp = new(side_range, manhat_range, inverse)
         sp.rng = MersenneTwister()
         sp.heuritic_cache = Dict{Array{UInt8,2},Float64}()
+        sp.lk = ReentrantLock()
         reset!(sp)
         return sp
     end
@@ -73,7 +75,7 @@ function find_tile_location(puzzle::Array{UInt8, 2}, tile::UInt8)::Tuple{Int, In
     return -1, -1
 end
 
-function compute_manhat(puzzle::Array{UInt8,2}, to_puzzle::Array{UInt8,2}, inverse=false)::Int
+function compute_manhat(puzzle::Array{UInt8,2}, to_puzzle::Array{UInt8,2}, inverse=false)::Union{Int, Float64}
     side = size(puzzle)[1]
     manhat = 0.0
     for to_c::Int in 1:side
@@ -165,13 +167,17 @@ end
 @inline SearchProblem.goal_test(sp::SlidingPuzzle, state::Array{UInt8,2})::Bool = state == sp.goal_puzzle
 
 @inline function SearchProblem.heuristic(sp::SlidingPuzzle, state::Array{UInt8,2})::Float64
-    if haskey(sp.heuritic_cache, state)
-        return sp.heuritic_cache[state]
-    else
-        h = compute_manhat(state, sp.goal_puzzle, sp.inverse)
-        sp.heuritic_cache[state] = h  
-        return h
+    lock(sp.lk) do
+        if haskey(sp.heuritic_cache, state)
+            return sp.heuritic_cache[state]
+        end
     end
+    
+    h = compute_manhat(state, sp.goal_puzzle, sp.inverse)
+    lock(sp.lk) do
+        sp.heuritic_cache[state] = h
+    end
+    return h
 end
 
 function SearchProblem.successors(sp::SlidingPuzzle, state::Array{UInt8,2})
