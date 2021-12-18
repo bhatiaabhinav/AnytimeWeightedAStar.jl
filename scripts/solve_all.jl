@@ -45,6 +45,7 @@ num_instances = 100
 search_problem = SlidingPuzzle(4:4, 40:50, inverse=true)  # Inverse Sliding Puzzle
 # search_problem = CityNavigation(150, 150, 3, 3, 100, 1) # City Navigation Problem
 # search_problem = TSP(25:35, (0.2, 0.8))  # Sparse Travelling Salesman Problem
+# search_problem = GNP(900:900, (0.10, 0.20))  # 900x900 Grid Navigation Problem with 10-20% density
 
 qualities_per_approach = solve_all(search_problem, num_instances, rwa_weights, awa_weights, nodes_budget)
 avg_quality_per_approach = get_avg_solution_quality_per_approach(qualities_per_approach)
