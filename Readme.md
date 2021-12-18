@@ -31,7 +31,3 @@ println(rwa.solution, " ", rwa.solution_cost)
 
 See `scripts/solve_all.jl` for more examples.
 
-
-## Creating New Search Problems
-
-The AbstractSearchProblem struct and the interface functions for creating new search problems are defined in `src/search_problem/abstract_search_problem.jl`. Look at `src/example_problems/npuzzle.jl` for an example of a search problem.
