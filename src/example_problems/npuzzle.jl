@@ -28,7 +28,7 @@ mutable struct SlidingPuzzle <: SearchProblem.AbstractSearchProblem{Matrix{UInt8
 end
 
 
-function max_possible_manhat(side::Int)::Int
+function max_possible_manhat(n::Int)::Int
     s = 0
     k = 1
     while n - k >= 0
