@@ -42,7 +42,7 @@ function SearchProblem.reset!(tsp::TSP)
 
     num_connections = 0
     @inline connected(cityid1, cityid2) = tsp.costs[cityid1, cityid2] < Inf
-    @inline function connect!(cityid1, cityid2, min_distance=0.01, max_distance=1)
+    @inline function connect!(cityid1, cityid2, min_distance=0.001, max_distance=1)
         if !connected(cityid1, cityid2)
             distance = min_distance + rand(tsp.rng, Float64) *  (max_distance - min_distance)
             tsp.costs[cityid1, cityid2] = tsp.costs[cityid2, cityid1] = distance
@@ -55,7 +55,7 @@ function SearchProblem.reset!(tsp::TSP)
         cityid > 1 ? connect!(cityid, cityid - 1) : nothing
         cityid == tsp.N ? connect!(cityid, 1) : nothing
     end
-        for cityid1 in 1:(tsp.N - 1)
+    for cityid1 in 1:(tsp.N - 1)
         for cityid2 in (cityid1 + 1):tsp.N
             if rand(tsp.rng) > target_sparsity
                 connect!(cityid1, cityid2)
