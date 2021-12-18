@@ -58,6 +58,7 @@ function pop!(mol::MultipleOpenLists{S,A}, weight::Float64)::Tuple{TreeSearchNod
     end
     node, g, h, handle = mol.key_to_nodehandle_map[key]
     delete!(mol.key_to_nodehandle_map, key)
+    mol.stats = update_mean_std_corr(mol.stats..., g, h, remove=true)
     return node, g, h
 end
 
@@ -73,19 +74,21 @@ function get(mol::MultipleOpenLists{S,A}, key::S)::Tuple{TreeSearchNode{S,A}, Fl
 end
 
 function delete!(mol::MultipleOpenLists{S,A}, key::S)::Nothing where {S,A}
-    _, _, _, handle = mol.key_to_nodehandle_map[key]
+    _, g, h, handle = mol.key_to_nodehandle_map[key]
     @inbounds for i in 1:length(mol.weights)
         delete!(mol.pqs[i], handle)
     end
     delete!(mol.key_to_nodehandle_map, key)
+    mol.stats = update_mean_std_corr(mol.stats..., g, h, remove=true)
     return nothing
 end
 
-function empty!(mol::MultipleOpenLists)::Nothing
-    @inbounds for i in 1:length(mol.weights)
-        extract_all!(mol.pqs[i])
-    end
+function empty!(mol::MultipleOpenLists{S, A})::Nothing where {S, A}
     empty!(mol.key_to_nodehandle_map)
-    # TODO: 
+    @inbounds for i in 1:length(mol.weights)
+        mol.pqs[i] = MutableBinaryMinHeap{Tuple{Float64, Int, S}}()  # TODO: is there an equivalent of empty! ?
+    end
+    mol.stats = (0.0, 0.0, 0.0, 0.0, 0.0, 0)
+    mol.counter = 0
     return nothing
 end
