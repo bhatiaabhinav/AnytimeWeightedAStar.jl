@@ -25,32 +25,33 @@ mutable struct City
     end
 end
 
-@inline euclid_distance(point1, point2) = sqrt(sum((point1 .- point2).^2))
+@inline euclid_distance(point1, point2) = sqrt(sum(@. (point1 - point2)^2))
 
 function reset_city!(city::City, position::Tuple{Real,Real}, rng::MersenneTwister)
     @inline connected(place1, place2) = city.costs[place1, place2] < Inf
-    function connect!(place1, place2)
+    @inline function connect!(place1, place2)
         if !connected(place1, place2)
-            distance = euclid_distance(city.places_positions[place1], city.places_positions[place2])
-            city.costs[place1, place2] = city.costs[place2, place1] = distance + (1 + 0.1 * rand(rng, Float32))
+            @inbounds distance = euclid_distance(city.places_positions[place1], city.places_positions[place2])
+            @inbounds city.costs[place1, place2] = city.costs[place2, place1] = distance + (1 + 0.1 * rand(rng, Float32))
             push!(city.places_neighbors[place1], place2)
             push!(city.places_neighbors[place2], place1)
         end
+        return nothing
     end
 
     city.position = position
     city.places_neighbors = [Int[] for _ in 1:city.num_places]
     fill!(city.costs, Inf32)
 
-    for place in 1:city.num_places
+    @inbounds for place in 1:city.num_places
         city.places_positions[place] = place == 1 ? city.position : Tuple(city.position .+ rand(rng, Float32, 2) * city.side)
         city.costs[place, place] = 0
         place > 1 ? connect!(place, place - 1) : nothing
         place == city.num_places ? connect!(place, 1) : nothing
     end
-    for place in 1:city.num_places
+    @inbounds for place in 1:city.num_places
         nearest = sort(1:city.num_places, by=p -> euclid_distance(city.places_positions[place], city.places_positions[p]))
-        for p in nearest[2:city.np + 1]
+        for p in @views nearest[2:city.np + 1]
             connect!(place, p)
         end
     end
@@ -84,26 +85,27 @@ end
 
 function SearchProblem.reset!(cnp::CityNavigation)
     @inline connected(cityid1, cityid2) = cnp.costs[cityid1, cityid2] < Inf
-    function connect!(cityid1, cityid2)
+    @inline function connect!(cityid1, cityid2)
         if !connected(cityid1, cityid2)
             distance = euclid_distance(cnp.cities[cityid1].position, cnp.cities[cityid2].position)
-            cnp.costs[cityid1, cityid2] = cnp.costs[cityid2, cityid1] = distance + 2
+            @inbounds cnp.costs[cityid1, cityid2] = cnp.costs[cityid2, cityid1] = distance + 2
             push!(cnp.cities_neighbors[cityid1], cityid2)
             push!(cnp.cities_neighbors[cityid2], cityid1)
         end
+        return nothing
     end
 
     cnp.cities_neighbors = [Int[] for _ in 1:cnp.num_cities]
     fill!(cnp.costs, Inf32)
-    for cityid in 1:cnp.num_cities
+    @inbounds for cityid in 1:cnp.num_cities
         reset_city!(cnp.cities[cityid], Tuple(rand(cnp.rng, Float32, 2) * cnp.side), cnp.rng)
         cnp.costs[cityid, cityid] = 0
         cityid > 1 ? connect!(cityid, cityid - 1) : nothing
         cityid == cnp.num_cities ? connect!(cityid, 1) : nothing
     end
-    for cityid in 1:cnp.num_cities
+    @inbounds for cityid in 1:cnp.num_cities
         nearest = sort(1:cnp.num_cities, by=cid -> euclid_distance(cnp.cities[cityid].position, cnp.cities[cid].position))
-        for cid in nearest[2:cnp.nc + 1]
+        for cid in @views nearest[2:cnp.nc + 1]
             connect!(cityid, cid)
         end
     end
