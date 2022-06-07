@@ -1,6 +1,6 @@
 # AnytimeWeightedAStar.jl
 
-Julia Implementation of [Anytime Weighted A* (AWA*)](https://arxiv.org/abs/1110.2737) algorithm and [Randomized Weighted A* (RWA*)](https://ojs.aaai.org/index.php/SOCS/article/download/18558/18347) algorithm (Published at SoCS 2021).
+Julia Implementation of [Anytime Weighted A* (AWA*)](https://arxiv.org/abs/1110.2737) algorithm and [Randomized Weighted A* (RWA*)](https://bhatiaabhinav.github.io/publication/BSZsocs21) algorithm (Published at SoCS 2021).
 
 RWA*, a variant of AWA* that randomly adjusts the weight at runtime, usually works better than using any static weight.
 
